@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.5)
 project(tf2_bullet)
 
 # Default to C++17
@@ -26,7 +26,7 @@ target_include_directories(tf2_bullet INTERFACE
 target_link_libraries(tf2_bullet INTERFACE
   tf2_bullet::Bullet
   tf2::tf2
-  geometry_msgs::geometry_msgs
+  ${geometry_msgs_TARGETS}
   tf2_ros::tf2_ros)
 
 install(TARGETS tf2_bullet EXPORT export_tf2_bullet)
