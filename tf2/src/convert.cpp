@@ -1,4 +1,5 @@
-// Copyright 2008, Willow Garage, Inc. All rights reserved.
+// Copyright 2026, Open Source Robotics Foundation, Inc.
+// All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
@@ -10,7 +11,7 @@
 //      notice, this list of conditions and the following disclaimer in the
 //      documentation and/or other materials provided with the distribution.
 //
-//    * Neither the name of the Willow Garage nor the names of its
+//    * Neither the name of the copyright holder nor the names of its
 //      contributors may be used to endorse or promote products derived from
 //      this software without specific prior written permission.
 //
@@ -26,65 +27,39 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-/** \author Tully Foote */
+#include <algorithm>
+#include <array>
+#include <cstddef>
 
-#include <string>
-#include <utility>
+#include "tf2/convert.hpp"
 
-#include "tf2/time_cache.hpp"
-#include "tf2/exceptions.hpp"
-
-bool tf2::StaticCache::getData(
-  tf2::TimePoint time,
-  tf2::TransformStorage & data_out, std::string * error_str, TF2Error * error_code)
+namespace tf2
 {
-  (void)time;
-  if (!populated_) {
-    if (error_str) {
-      *error_str = "Static cache is empty";
-    }
-    if (error_code) {
-      *error_code = TF2Error::TF2_LOOKUP_ERROR;
-    }
-    return false;
+
+std::array<std::array<double, 6>, 6> covarianceRowMajorToNested(
+  const std::array<double, 36> & row_major)
+{
+  std::array<std::array<double, 6>, 6> nested_array;
+  std::array<double, 36>::const_iterator ss = row_major.begin();
+  for (std::array<double, 6> & dd : nested_array) {
+    std::copy_n(ss, dd.size(), dd.begin());
+    ss += dd.size();
   }
-  data_out = storage_;
-  data_out.stamp_ = time;
-  return true;
+  return nested_array;
 }
 
-bool tf2::StaticCache::insertData(const tf2::TransformStorage & new_data)
+std::array<double, 36> covarianceNestedToRowMajor(
+  const std::array<std::array<double, 6>, 6> & nested_array)
 {
-  storage_ = new_data;
-  populated_ = true;
-  return true;
+  std::array<double, 36> row_major = {};
+  size_t counter = 0;
+  for (const auto & arr : nested_array) {
+    for (const double & val : arr) {
+      row_major[counter] = val;
+      counter++;
+    }
+  }
+  return row_major;
 }
 
-void tf2::StaticCache::clearList() {populated_ = false;}
-
-unsigned tf2::StaticCache::getListLength() {return populated_ ? 1 : 0;}
-
-tf2::CompactFrameID tf2::StaticCache::getParent(
-  tf2::TimePoint time, std::string * error_str,
-  TF2Error * error_code)
-{
-  (void)time;
-  (void)error_code;
-  (void)error_str;
-  return populated_ ? storage_.frame_id_ : 0;
-}
-
-tf2::P_TimeAndFrameID tf2::StaticCache::getLatestTimeAndParent()
-{
-  return std::make_pair(TimePoint(), storage_.frame_id_);
-}
-
-tf2::TimePoint tf2::StaticCache::getLatestTimestamp()
-{
-  return tf2::TimePoint();
-}
-
-tf2::TimePoint tf2::StaticCache::getOldestTimestamp()
-{
-  return tf2::TimePoint();
-}
+}  // namespace tf2
