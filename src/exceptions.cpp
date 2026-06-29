@@ -1,4 +1,5 @@
-// Copyright 2008, Willow Garage, Inc. All rights reserved.
+// Copyright 2026, Open Source Robotics Foundation, Inc.
+// All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
@@ -10,7 +11,7 @@
 //      notice, this list of conditions and the following disclaimer in the
 //      documentation and/or other materials provided with the distribution.
 //
-//    * Neither the name of the Willow Garage nor the names of its
+//    * Neither the name of the copyright holder nor the names of its
 //      contributors may be used to endorse or promote products derived from
 //      this software without specific prior written permission.
 //
@@ -26,65 +27,57 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-/** \author Tully Foote */
-
 #include <string>
-#include <utility>
 
-#include "tf2/time_cache.hpp"
 #include "tf2/exceptions.hpp"
 
-bool tf2::StaticCache::getData(
-  tf2::TimePoint time,
-  tf2::TransformStorage & data_out, std::string * error_str, TF2Error * error_code)
+namespace tf2
 {
-  (void)time;
-  if (!populated_) {
-    if (error_str) {
-      *error_str = "Static cache is empty";
-    }
-    if (error_code) {
-      *error_code = TF2Error::TF2_LOOKUP_ERROR;
-    }
-    return false;
-  }
-  data_out = storage_;
-  data_out.stamp_ = time;
-  return true;
+
+TransformException::TransformException(const std::string errorDescription)
+: std::runtime_error(errorDescription)
+{
 }
 
-bool tf2::StaticCache::insertData(const tf2::TransformStorage & new_data)
+ConnectivityException::ConnectivityException(const std::string errorDescription)
+: tf2::TransformException(errorDescription)
 {
-  storage_ = new_data;
-  populated_ = true;
-  return true;
 }
 
-void tf2::StaticCache::clearList() {populated_ = false;}
-
-unsigned tf2::StaticCache::getListLength() {return populated_ ? 1 : 0;}
-
-tf2::CompactFrameID tf2::StaticCache::getParent(
-  tf2::TimePoint time, std::string * error_str,
-  TF2Error * error_code)
+LookupException::LookupException(const std::string errorDescription)
+: tf2::TransformException(errorDescription)
 {
-  (void)time;
-  (void)error_code;
-  (void)error_str;
-  return populated_ ? storage_.frame_id_ : 0;
 }
 
-tf2::P_TimeAndFrameID tf2::StaticCache::getLatestTimeAndParent()
+ExtrapolationException::ExtrapolationException(const std::string errorDescription)
+: tf2::TransformException(errorDescription)
 {
-  return std::make_pair(TimePoint(), storage_.frame_id_);
 }
 
-tf2::TimePoint tf2::StaticCache::getLatestTimestamp()
+BackwardExtrapolationException::BackwardExtrapolationException(const std::string errorDescription)
+: ExtrapolationException(errorDescription)
 {
-  return tf2::TimePoint();
 }
 
-tf2::TimePoint tf2::StaticCache::getOldestTimestamp()
+ForwardExtrapolationException::ForwardExtrapolationException(const std::string errorDescription)
+: ExtrapolationException(errorDescription)
 {
-  return tf2::TimePoint();
 }
+
+NoDataForExtrapolationException::NoDataForExtrapolationException(
+  const std::string errorDescription)
+: ExtrapolationException(errorDescription)
+{
+}
+
+InvalidArgumentException::InvalidArgumentException(const std::string errorDescription)
+: tf2::TransformException(errorDescription)
+{
+}
+
+TimeoutException::TimeoutException(const std::string errorDescription)
+: tf2::TransformException(errorDescription)
+{
+}
+
+}  // namespace tf2
