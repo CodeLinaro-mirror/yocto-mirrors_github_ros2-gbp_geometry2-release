@@ -38,6 +38,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <unordered_map>
 
@@ -53,8 +54,21 @@
 #include "rclcpp/node_interfaces/get_node_base_interface.hpp"
 #include "rclcpp/node_interfaces/get_node_services_interface.hpp"
 #include "rclcpp/node_interfaces/get_node_logging_interface.hpp"
+#include "rclcpp/node_interfaces/node_base_interface.hpp"
+#include "rclcpp/node_interfaces/node_services_interface.hpp"
 #include "rclcpp/node_interfaces/node_logging_interface.hpp"
-#include "rclcpp/rclcpp.hpp"
+#include "rclcpp/node_interfaces/node_interfaces.hpp"
+#include "rclcpp/clock.hpp"
+#include "rclcpp/duration.hpp"
+#include "rclcpp/logger.hpp"
+#include "rclcpp/qos.hpp"
+#include "rclcpp/service.hpp"
+#include "rclcpp/time.hpp"
+
+namespace rclcpp
+{
+class Node;
+}  // namespace rclcpp
 
 namespace tf2_ros
 {
@@ -72,46 +86,41 @@ public:
   using tf2::BufferCore::canTransform;
   using SharedPtr = std::shared_ptr<tf2_ros::Buffer>;
 
+  using NodeBaseInterface = rclcpp::node_interfaces::NodeBaseInterface;
+  using NodeLoggingInterface = rclcpp::node_interfaces::NodeLoggingInterface;
+  using NodeServicesInterface = rclcpp::node_interfaces::NodeServicesInterface;
+  using RequiredInterfaces = rclcpp::node_interfaces::NodeInterfaces<NodeBaseInterface,
+      NodeLoggingInterface, NodeServicesInterface>;
+
+  /** \brief  Constructor for a Buffer object
+   * \param clock A clock to use for time and sleeping
+   * \param cache_time How long to keep a history of transforms
+   * \param interfaces If passed advertise the view_frames service that exposes debugging information from the buffer, based on a set of node interfaces
+   * \param  qos If passed change the quality of service of the frames_server_ service
+   */
+  TF2_ROS_PUBLIC
+  Buffer(
+    rclcpp::Clock::SharedPtr clock,
+    tf2::Duration cache_time = tf2::Duration(tf2::BUFFER_CORE_DEFAULT_CACHE_TIME),
+    RequiredInterfaces node_interfaces = RequiredInterfaces(),
+    const rclcpp::QoS & qos = rclcpp::ServicesQoS());
+
   /** \brief  Constructor for a Buffer object
    * \param clock A clock to use for time and sleeping
    * \param cache_time How long to keep a history of transforms
    * \param node If passed advertise the view_frames service that exposes debugging information from the buffer
    * \param  qos If passed change the quality of service of the frames_server_ service
    */
-  template<typename NodeT = rclcpp::Node::SharedPtr>
+  template<class NodeT = std::shared_ptr<rclcpp::Node>, class AllocatorT = std::allocator<void>,
+    std::enable_if_t<rcpputils::is_pointer<NodeT>::value, bool> = true>
+  [[deprecated("Use rclcpp::node_interfaces::NodeInterfaces instead of NoteT")]]
   Buffer(
     rclcpp::Clock::SharedPtr clock,
     tf2::Duration cache_time = tf2::Duration(tf2::BUFFER_CORE_DEFAULT_CACHE_TIME),
     NodeT && node = NodeT(),
     const rclcpp::QoS & qos = rclcpp::ServicesQoS())
-  : BufferCore(cache_time), clock_(clock), timer_interface_(nullptr)
+  : Buffer(clock, cache_time, *node, qos)
   {
-    if (nullptr == clock_) {
-      throw std::invalid_argument("clock must be a valid instance");
-    }
-
-    auto post_jump_cb = [this](const rcl_time_jump_t & jump_info) {onTimeJump(jump_info);};
-
-    rcl_jump_threshold_t jump_threshold;
-    // Disable forward jump callbacks
-    jump_threshold.min_forward.nanoseconds = 0;
-    // Anything backwards is a jump
-    jump_threshold.min_backward.nanoseconds = -1;
-    // Callback if the clock changes too
-    jump_threshold.on_clock_change = true;
-
-    jump_handler_ = clock_->create_jump_callback(nullptr, post_jump_cb, jump_threshold);
-
-    if (node) {
-      node_logging_interface_ = rclcpp::node_interfaces::get_node_logging_interface(node);
-
-      frames_server_ = rclcpp::create_service<tf2_msgs::srv::FrameGraph>(
-        rclcpp::node_interfaces::get_node_base_interface(node),
-        rclcpp::node_interfaces::get_node_services_interface(node),
-        "tf2_frames", std::bind(
-          &Buffer::getFrames, this, std::placeholders::_1,
-          std::placeholders::_2), qos, nullptr);
-    }
   }
 
   /** \brief Get the transform between two frames by frame ID.
@@ -139,10 +148,7 @@ public:
   lookupTransform(
     const std::string & target_frame, const std::string & source_frame,
     const rclcpp::Time & time,
-    const rclcpp::Duration timeout = rclcpp::Duration::from_nanoseconds(0)) const
-  {
-    return lookupTransform(target_frame, source_frame, fromRclcpp(time), fromRclcpp(timeout));
-  }
+    const rclcpp::Duration timeout = rclcpp::Duration::from_nanoseconds(0)) const;
 
   /** \brief Get the transform between two frames by frame ID assuming fixed frame.
    * \param target_frame The frame to which data should be transformed
@@ -174,13 +180,7 @@ public:
     const std::string & target_frame, const rclcpp::Time & target_time,
     const std::string & source_frame, const rclcpp::Time & source_time,
     const std::string & fixed_frame,
-    const rclcpp::Duration timeout = rclcpp::Duration::from_nanoseconds(0)) const
-  {
-    return lookupTransform(
-      target_frame, fromRclcpp(target_time),
-      source_frame, fromRclcpp(source_time),
-      fixed_frame, fromRclcpp(timeout));
-  }
+    const rclcpp::Duration timeout = rclcpp::Duration::from_nanoseconds(0)) const;
 
   /** \brief Test if a transform is possible
    * \param target_frame The frame into which to transform
@@ -207,10 +207,7 @@ public:
     const std::string & target_frame, const std::string & source_frame,
     const rclcpp::Time & time,
     const rclcpp::Duration timeout = rclcpp::Duration::from_nanoseconds(0),
-    std::string * errstr = NULL) const
-  {
-    return canTransform(target_frame, source_frame, fromRclcpp(time), fromRclcpp(timeout), errstr);
-  }
+    std::string * errstr = NULL) const;
 
   /** \brief Test if a transform is possible
    * \param target_frame The frame into which to transform
@@ -243,14 +240,7 @@ public:
     const std::string & source_frame, const rclcpp::Time & source_time,
     const std::string & fixed_frame,
     const rclcpp::Duration timeout = rclcpp::Duration::from_nanoseconds(0),
-    std::string * errstr = NULL) const
-  {
-    return canTransform(
-      target_frame, fromRclcpp(target_time),
-      source_frame, fromRclcpp(source_time),
-      fixed_frame, fromRclcpp(timeout),
-      errstr);
-  }
+    std::string * errstr = NULL) const;
 
   /** \brief Wait for a transform between two frames to become available.
    *
@@ -284,13 +274,7 @@ public:
   waitForTransform(
     const std::string & target_frame, const std::string & source_frame,
     const rclcpp::Time & time,
-    const rclcpp::Duration & timeout, TransformReadyCallback callback)
-  {
-    return waitForTransform(
-      target_frame, source_frame,
-      fromRclcpp(time), fromRclcpp(timeout),
-      callback);
-  }
+    const rclcpp::Duration & timeout, TransformReadyCallback callback);
 
   /**
    * \brief Cancel the future to make sure the callback of requested transform is clean.
@@ -301,11 +285,8 @@ public:
   cancel(const TransformStampedFuture & ts_future) override;
 
   TF2_ROS_PUBLIC
-  inline void
-  setCreateTimerInterface(CreateTimerInterface::SharedPtr create_timer_interface)
-  {
-    timer_interface_ = create_timer_interface;
-  }
+  void
+  setCreateTimerInterface(CreateTimerInterface::SharedPtr create_timer_interface);
 
 private:
   void timerCallback(
@@ -334,8 +315,11 @@ private:
   /// \brief A clock to use for time and sleeping
   rclcpp::Clock::SharedPtr clock_;
 
+  /// \brief A set of interface to access the buffer's node
+  RequiredInterfaces node_interfaces_;
+
   /// \brief A node logging interface to access the buffer node's logger
-  rclcpp::node_interfaces::NodeLoggingInterface::SharedPtr node_logging_interface_;
+  NodeLoggingInterface::SharedPtr node_logging_interface_;
 
   /// \brief Interface for creating timers
   CreateTimerInterface::SharedPtr timer_interface_;

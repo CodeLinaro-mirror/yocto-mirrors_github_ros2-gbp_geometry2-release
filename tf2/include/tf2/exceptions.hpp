@@ -42,21 +42,6 @@
 namespace tf2
 {
 
-// TODO(clalancette): We can remove these workarounds when we remove the
-// deprecated TF2Error enums.
-#if defined(_WIN32)
-#pragma push_macro("NO_ERROR")
-#undef NO_ERROR
-#endif
-#if defined(__APPLE__) || defined(__clang__)
-// The clang compiler on Apple claims that [[deprecated]] on an enumerator value
-// is a C++17 feature, when it was really introduced in C++14.  Ignore that
-// warning when defining the structure; this whole thing will go away when we
-// remove the deprecated values.
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wc++17-extensions"
-#endif
-
 enum class TF2Error : std::uint8_t
 {
   // While the TF2_ prefix here is a bit redundant, it also prevents us from
@@ -71,24 +56,7 @@ enum class TF2Error : std::uint8_t
   TF2_BACKWARD_EXTRAPOLATION_ERROR = 7,
   TF2_FORWARD_EXTRAPOLATION_ERROR = 8,
   TF2_NO_DATA_FOR_EXTRAPOLATION_ERROR = 9,
-
-  NO_ERROR [[deprecated("Use TF2_NO_ERROR instead")]] = 0,
-  LOOKUP_ERROR [[deprecated("Use TF2_LOOKUP_ERROR instead")]] = 1,
-  CONNECTIVITY_ERROR [[deprecated("Use TF2_CONNECTIVITY_ERROR instead")]] = 2,
-  EXTRAPOLATION_ERROR [[deprecated("Use TF2_EXTRAPOLATION_ERROR instead")]] = 3,
-  INVALID_ARGUMENT_ERROR [[deprecated("Use TF2_INVALID_ARGUMENT_ERROR instead")]] = 4,
-  TIMEOUT_ERROR [[deprecated("Use TF2_TIMEOUT_ERROR instead")]] = 5,
-  TRANSFORM_ERROR [[deprecated("Use TF2_TRANSFORM_ERROR instead")]] = 6
 };
-
-// TODO(clalancette): We can remove these workarounds when we remove the
-// deprecated TF2Error enums.
-#if defined(__APPLE__)
-#pragma clang diagnostic pop
-#endif
-#if defined(_WIN32)
-#pragma pop_macro("NO_ERROR")
-#endif
 
 /** \brief A base class for all tf2 exceptions
  * This inherits from ros::exception
@@ -98,10 +66,7 @@ class TransformException : public std::runtime_error
 {
 public:
   TF2_PUBLIC
-  explicit TransformException(const std::string errorDescription)
-  : std::runtime_error(errorDescription)
-  {
-  }
+  explicit TransformException(const std::string errorDescription);
 };
 
 
@@ -114,10 +79,7 @@ class ConnectivityException : public TransformException
 {
 public:
   TF2_PUBLIC
-  explicit ConnectivityException(const std::string errorDescription)
-  : tf2::TransformException(errorDescription)
-  {
-  }
+  explicit ConnectivityException(const std::string errorDescription);
 };
 
 
@@ -133,10 +95,7 @@ class LookupException : public TransformException
 {
 public:
   TF2_PUBLIC
-  explicit LookupException(const std::string errorDescription)
-  : tf2::TransformException(errorDescription)
-  {
-  }
+  explicit LookupException(const std::string errorDescription);
 };
 
 /** \brief An exception class to notify that the requested value would have required extrapolation beyond current limits.
@@ -146,10 +105,7 @@ class ExtrapolationException : public TransformException
 {
 public:
   TF2_PUBLIC
-  explicit ExtrapolationException(const std::string errorDescription)
-  : tf2::TransformException(errorDescription)
-  {
-  }
+  explicit ExtrapolationException(const std::string errorDescription);
 };
 
 /** \brief An exception class to notify that the requested value would have required extrapolation in the past.
@@ -159,10 +115,7 @@ class BackwardExtrapolationException : public ExtrapolationException
 {
 public:
   TF2_PUBLIC
-  explicit BackwardExtrapolationException(const std::string errorDescription)
-  : ExtrapolationException(errorDescription)
-  {
-  }
+  explicit BackwardExtrapolationException(const std::string errorDescription);
 };
 
 /** \brief An exception class to notify that the requested value would have required extrapolation in the future.
@@ -172,10 +125,7 @@ class ForwardExtrapolationException : public ExtrapolationException
 {
 public:
   TF2_PUBLIC
-  explicit ForwardExtrapolationException(const std::string errorDescription)
-  : ExtrapolationException(errorDescription)
-  {
-  }
+  explicit ForwardExtrapolationException(const std::string errorDescription);
 };
 
 /** \brief An exception class to notify that the requested value would have required extrapolation, but only zero or one data is available, so not enough for extrapolation.
@@ -185,10 +135,7 @@ class NoDataForExtrapolationException : public ExtrapolationException
 {
 public:
   TF2_PUBLIC
-  explicit NoDataForExtrapolationException(const std::string errorDescription)
-  : ExtrapolationException(errorDescription)
-  {
-  }
+  explicit NoDataForExtrapolationException(const std::string errorDescription);
 };
 
 /** \brief An exception class to notify that one of the arguments is invalid
@@ -200,8 +147,7 @@ class InvalidArgumentException : public TransformException
 {
 public:
   TF2_PUBLIC
-  explicit InvalidArgumentException(const std::string errorDescription)
-  : tf2::TransformException(errorDescription) {}
+  explicit InvalidArgumentException(const std::string errorDescription);
 };
 
 /** \brief An exception class to notify that a timeout has occurred
@@ -212,10 +158,7 @@ class TimeoutException : public TransformException
 {
 public:
   TF2_PUBLIC
-  explicit TimeoutException(const std::string errorDescription)
-  : tf2::TransformException(errorDescription)
-  {
-  }
+  explicit TimeoutException(const std::string errorDescription);
 };
 }  // namespace tf2
 #endif  // TF2__EXCEPTIONS_HPP_
