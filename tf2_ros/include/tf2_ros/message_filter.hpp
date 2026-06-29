@@ -57,9 +57,12 @@
 #include "tf2/time.hpp"
 #include "tf2_ros/async_buffer_interface.hpp"
 #include "tf2_ros/buffer.hpp"
+#include "tf2_ros/visibility_control.hpp"
 
 #include "builtin_interfaces/msg/time.hpp"
-#include "rclcpp/rclcpp.hpp"
+#include "rclcpp/duration.hpp"
+#include "rclcpp/node.hpp"
+#include "rclcpp/time.hpp"
 #include "rclcpp/node_interfaces/node_interfaces.hpp"
 #include "rclcpp/node_interfaces/get_node_logging_interface.hpp"
 #include "rclcpp/node_interfaces/get_node_clock_interface.hpp"
@@ -102,24 +105,9 @@ enum FilterFailureReason
 
 }  // namespace filter_failure_reasons
 
-static std::string get_filter_failure_reason_string(
-  filter_failure_reasons::FilterFailureReason reason)
-{
-  switch (reason) {
-    case filter_failure_reasons::OutTheBack:
-      return
-        "the timestamp on the message is earlier than all the data in the transform cache";
-    case filter_failure_reasons::EmptyFrameID:
-      return "the frame id of the message is empty";
-    case filter_failure_reasons::NoTransformFound:
-      return "did not find a valid transform, this usually happens at startup ...";
-    case filter_failure_reasons::QueueFull:
-      return "discarding message because the queue is full";
-    case filter_failure_reasons::Unknown:  // fallthrough
-    default:
-      return "unknown";
-  }
-}
+TF2_ROS_PUBLIC
+std::string get_filter_failure_reason_string(
+  filter_failure_reasons::FilterFailureReason reason);
 
 typedef filter_failure_reasons::FilterFailureReason FilterFailureReason;
 
@@ -128,7 +116,8 @@ class MessageFilterBase
 public:
   typedef std::vector<std::string> V_string;
 
-  virtual ~MessageFilterBase() {}
+  TF2_ROS_PUBLIC
+  virtual ~MessageFilterBase();
   virtual void clear() = 0;
   virtual void setTargetFrame(const std::string & target_frame) = 0;
   virtual void setTargetFrames(const V_string & target_frames) = 0;
@@ -233,7 +222,7 @@ public:
   [[deprecated("Use rclcpp::node_interfaces::NodeInterfaces instead of Node::SharedPtr&")]]
   MessageFilter(
     BufferT & buffer, const std::string & target_frame, uint32_t queue_size,
-    const rclcpp::Node::SharedPtr & node,
+    const std::shared_ptr<rclcpp::Node> & node,
     std::chrono::duration<TimeRepT, TimeT> buffer_timeout =
     std::chrono::duration<TimeRepT, TimeT>::max())
   : MessageFilter(
@@ -281,7 +270,7 @@ public:
   [[deprecated("Use rclcpp::node_interfaces::NodeInterfaces instead of Node::SharedPtr&")]]
   MessageFilter(
     F & f, BufferT & buffer, const std::string & target_frame, uint32_t queue_size,
-    const rclcpp::Node::SharedPtr & node,
+    const std::shared_ptr<rclcpp::Node> & node,
     std::chrono::duration<TimeRepT, TimeT> buffer_timeout =
     std::chrono::duration<TimeRepT, TimeT>::max())
   : MessageFilter(
