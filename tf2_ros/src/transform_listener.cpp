@@ -30,12 +30,14 @@
 /** \author Tully Foote */
 
 #include <memory>
-#include <sstream>
 #include <string>
 #include <thread>
 #include <utility>
 
 #include "tf2_ros/transform_listener.hpp"
+
+#include "rclcpp/node.hpp"
+#include "rclcpp/node_options.hpp"
 
 namespace tf2_ros
 {
