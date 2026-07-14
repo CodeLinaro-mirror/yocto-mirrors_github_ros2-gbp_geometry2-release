@@ -2,24 +2,10 @@
 Changelog for package tf2_ros
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-0.46.2 (2026-07-14)
+0.45.8 (2026-07-14)
 -------------------
-* use C++ 20 in default. (`#953 <https://github.com/ros2/geometry2/issues/953>`_)
-* Removed deprecated code (`#940 <https://github.com/ros2/geometry2/issues/940>`_)
-* Contributors: Alejandro Hernández Cordero, Tomoya Fujita
-
-0.46.1 (2026-06-29)
--------------------
-* Optimize header includes (`#952 <https://github.com/ros2/geometry2/issues/952>`_)
-* Move implementation from hpp to cpp (`#951 <https://github.com/ros2/geometry2/issues/951>`_)
-* Change constructor overloads to sidestep uncrustify differences (`#949 <https://github.com/ros2/geometry2/issues/949>`_)
-* Cleanup headers (`#928 <https://github.com/ros2/geometry2/issues/928>`_)
-* Contributors: Alejandro Hernández Cordero, Michael Carroll
-
-0.46.0 (2026-05-07)
--------------------
-* Improve tf2_ros::MessageFilter test reliability (`#929 <https://github.com/ros2/geometry2/issues/929>`_)
-* Contributors: Michael Carroll
+* Cleanup headers (`#928 <https://github.com/ros2/geometry2/issues/928>`_) (`#943 <https://github.com/ros2/geometry2/issues/943>`_)
+* Contributors: mergify[bot]
 
 0.45.7 (2026-04-09)
 -------------------
