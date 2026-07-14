@@ -40,7 +40,6 @@
 
 #include "tf2/LinearMath/Vector3.hpp"
 #include "tf2/LinearMath/Quaternion.hpp"
-#include "tf2/LinearMath/Transform.hpp"
 
 namespace tf2
 {
@@ -158,7 +157,7 @@ uint8_t TimeCache::findClosest(
     storage_it++;
   }
 
-  // Finally the case were somewhere in the middle  Guarenteed no extrapolation :-)
+  // Finally the case were somewhere in the middle  Guaranteed no extrapolation :-)
   one = &*(storage_it);  // Older
   two = &*(--storage_it);  // Newer
   return 2;
