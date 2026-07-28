@@ -32,6 +32,7 @@
 #include <memory>
 
 #include <tf2_ros/static_transform_broadcaster.hpp>
+
 #include "node_wrapper.hpp"
 
 class CustomNode : public rclcpp::Node
@@ -43,7 +44,7 @@ public:
 
   void init_tf_broadcaster()
   {
-    tf_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(shared_from_this());
+    tf_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(*shared_from_this());
   }
 
 private:
@@ -59,7 +60,7 @@ public:
 
   void init_tf_broadcaster()
   {
-    tf_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(shared_from_this());
+    tf_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(*shared_from_this());
   }
 
 private:
@@ -70,7 +71,19 @@ TEST(tf2_test_static_transform_broadcaster, transform_broadcaster_rclcpp_node)
 {
   auto node = rclcpp::Node::make_shared("tf2_ros_message_filter");
 
-  tf2_ros::StaticTransformBroadcaster tfb(node);
+  // Construct static tf broadcaster from node object
+  {
+    tf2_ros::StaticTransformBroadcaster tfb(*node);
+  }
+  // Construct static tf broadcaster from NodeInterfaces
+  {
+    tf2_ros::StaticTransformBroadcaster tfb(
+      rclcpp::node_interfaces::NodeInterfaces<
+        rclcpp::node_interfaces::NodeParametersInterface,
+        rclcpp::node_interfaces::NodeTopicsInterface>(
+      node->get_node_parameters_interface(),
+      node->get_node_topics_interface()));
+  }
 }
 
 TEST(tf2_test_static_transform_broadcaster, transform_broadcaster_with_intraprocess)
@@ -86,7 +99,19 @@ TEST(tf2_test_static_transform_broadcaster, transform_broadcaster_custom_rclcpp_
 {
   auto node = std::make_shared<NodeWrapper>("tf2_ros_message_filter");
 
-  tf2_ros::StaticTransformBroadcaster tfb(node);
+  // Construct static tf broadcaster from node object
+  {
+    tf2_ros::StaticTransformBroadcaster tfb(*node);
+  }
+  // Construct static tf broadcaster from node interfaces
+  {
+    tf2_ros::StaticTransformBroadcaster tfb(
+      rclcpp::node_interfaces::NodeInterfaces<
+        rclcpp::node_interfaces::NodeParametersInterface,
+        rclcpp::node_interfaces::NodeTopicsInterface>(
+      node->get_node_parameters_interface(),
+      node->get_node_topics_interface()));
+  }
 }
 
 TEST(tf2_test_static_transform_broadcaster, transform_broadcaster_as_member)
@@ -99,5 +124,7 @@ int main(int argc, char ** argv)
 {
   testing::InitGoogleTest(&argc, argv);
   rclcpp::init(argc, argv);
-  return RUN_ALL_TESTS();
+  auto ret = RUN_ALL_TESTS();
+  rclcpp::shutdown();
+  return ret;
 }

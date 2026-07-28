@@ -42,11 +42,13 @@
 
 void spin_for_a_second(std::shared_ptr<rclcpp::Node> & node)
 {
+  rclcpp::executors::SingleThreadedExecutor executor;
+  executor.add_node(node);
   rclcpp::Rate r(10);
-  rclcpp::spin_some(node);
+  executor.spin_some();
   for (int i = 0; i < 10; ++i) {
     r.sleep();
-    rclcpp::spin_some(node);
+    executor.spin_some();
   }
 }
 
@@ -57,8 +59,8 @@ TEST(tf2_ros_time_reset_test, time_backwards)
   rclcpp::Clock::SharedPtr clock = std::make_shared<rclcpp::Clock>(RCL_SYSTEM_TIME);
 
   tf2_ros::Buffer buffer(clock);
-  tf2_ros::TransformListener tfl(buffer);
-  tf2_ros::TransformBroadcaster tfb(node_);
+  tf2_ros::TransformListener tfl(buffer, *node_);
+  tf2_ros::TransformBroadcaster tfb(*node_);
 
   auto clock_pub = node_->create_publisher<rosgraph_msgs::msg::Clock>("/clock", 1);
 
@@ -97,7 +99,9 @@ TEST(tf2_ros_time_reset_test, time_backwards)
   // clock_pub->publish(c);
   //
   // // make sure it arrives
-  // rclcpp::spin_some(node_);
+  // rclcpp::executors::SingleThreadedExecutor executor;
+  // executor.add_node(node_);
+  // executor.spin_some();
   // sleep(1);
   //
   // //Send anoterh message to trigger clock test on an unrelated frame
@@ -108,7 +112,7 @@ TEST(tf2_ros_time_reset_test, time_backwards)
   // tfb.sendTransform(msg);
   //
   // // make sure it arrives
-  // rclcpp::spin_some(node_);
+  // executor.spin_some();
   // sleep(1);
   //
   // //verify the data's been cleared
@@ -119,5 +123,7 @@ int main(int argc, char ** argv)
 {
   testing::InitGoogleTest(&argc, argv);
   rclcpp::init(argc, argv);
-  return RUN_ALL_TESTS();
+  auto ret = RUN_ALL_TESTS();
+  rclcpp::shutdown();
+  return ret;
 }
